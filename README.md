@@ -71,6 +71,60 @@ All features are **standardized**, and team/player/league names are removed from
 
 ---
 
+## Understaind the dataset more (Train_Data folder)
+
+This section explains how the data is organized so you can load and use it correctly.
+
+### What you have on disk
+
+In this project, the data lives under `data/`:
+- Training features (inputs): `data/Train_Data/` (4 csv files)
+- Training labels (target): `data/Y_train_1rknArQ.csv`
+- Test features: `data/Test_Data/` (4 csv files)
+- Example test submission: `data/Y_test_random_sEE2QeA.csv`
+
+The same 4 csvs exist for both train and test; only the folder name and file prefix change (`train_*` vs `test_*`).
+
+### The 4 input files (per match: HOME vs AWAY, team vs player)
+
+Each **match** is indentifed by a unique **ID**. For each match you get:
+- `train_home_team_statistics_df.csv`: **Home team** stats (one row per match) | 1 row per ID (match ID)
+- `train_away_team_statistics_df.csv`: **Away team** stats (one row per match) | 1 row per ID (match ID)
+- `train_home_player_statistics_df.csv`: **Home team's players** (one row per player per match) | many rows per ID (match ID)
+- `train_away_player_statistics_df.csv`: **Away team's players** (one row per player per match) | many rows per ID (match ID)
+
+For **Team/Match files:** One row per match. Same IDS as in `Y_train`, you can join directly on `ID`.
+
+For **Player files:** Several rows per match (one per player in the squad). To get one row per match, you must/should **aggregate by `ID`** (e.q. mean, sum, or customer features per team).
+
+So for each match you have: ome home team row, one away team row, any many home/away player rows. The **target** for that match is in `Y_train`: one row per `ID` with values as `HOME_WINS`, `DRAW`, `AWAY_WINS`.
+
+### How the feature columns are built
+
+Statistics are not single columns; each metric is expanded into **serveral columns** depending on:
+1. **Time window** (look at the middle part of the name: `__season__` vs `_5_last_match_`)
+  - **Season so far**: stats for the curren seaon up to **(but not including)** the match to predict.
+  - **Last 5 match**: stats over the 5 games immediately **before** that match
+
+2. **Aggregation** (look at the end: `_sum`, `_average`, `_std`)
+  - **sum**: total over the window
+  - **average**: mean per game
+  - **std**: standard deviation over the window
+
+**Example for team data:** A single `TEAM_GOALS` metric becomes 6 columns - the name tells you the window and aggregation method:
+- `TEAM_GOALS_season_sum`: season so far, total goals
+- `TEAM_GOALS_season_average`: season so far, average per game
+- `TEAM_GOALS_season_std`: season so far, standard deviation
+- `TEAM_GOALS_5_last_match_sum`: last 5 games, total goals
+- `TEAM_GOALS_5_last_match_average`: last 5 games, average per game
+- `TEAM_GOALS_5_last_match_std`: last 5 games, standard deviation
+
+### Train vs Test: whats diff
+- **Train (Train_Data):** includes `LEAGUE`, `TEAM_NAME` (and in player files `PLAYER_NAME`, `POSITION`). Useful for EDA and understadning the data. 
+- **Test (Test_Data):** Only `ID` (and in player files `POSITION`) are kept as indentifiers. No league or team or player name, so our model must rely on the numerical stats only.
+
+Values in the CSVs are **standardized** (scaled), so the numbers you see are not raw counts.
+
 ## 🎯 Output Labels
 The target variable is a **3-class outcome vector**:
 
@@ -126,11 +180,9 @@ This project focuses on:
 3. Create a local folder named:
 data/
 
-
 4. Place all downloaded files inside the `data/` folder
 
-5. Add the following line to `.gitignore`:
-data/
+5. Extract zip files in `data/`
 
 
 ⚠️ **Do NOT commit the dataset to GitHub**  
